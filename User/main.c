@@ -1,7 +1,6 @@
 #include "stm32f4xx.h"
 #include "usart.h"
 #include "timer.h"
-// #include "lvgl_port.h"
 #include "lvgl.h"
 #include "lv_port_disp.h"
 #include "lv_port_indev.h"
@@ -9,46 +8,55 @@
 #include "Delay.h"
 #include "stdio.h"
 #include "CST816.h"
+#include "lv_conf.h"
 
+// 全局系统时间计数器（由 TIM3 中断递增）
+static volatile uint32_t sys_time = 0;
+
+/**
+ * @brief 主函数
+ */
 int main(void)
 {
     // 初始化硬件接口
-    Delay_Init();  // 延时函数
-    USART1_Init(); // 串口调试
-    // 不需要定时器为LVGL提供心跳，注释或删除定时器初始化
-    Timer_Init();
+    Delay_Init();      // 延时函数
+    USART1_Init();     // 串口调试
+    Timer_Init();      // 初始化 TIM3，提供 1ms 时间戳
+    mylvgl_init();     // 初始化 LVGL
+    lv_demo_widgets(); // 运行 LVGL 示例
 
-    // 初始化 LV
-    mylvgl_init();
-    // 运行 LVGL 示例
-    lv_demo_widgets();
-
-    // uint16_t x, y;
-    // uint8_t gesture, points;
+    uint16_t x, y;
+    uint8_t gesture, points;
+    uint32_t last_task_time  = 0;
+    uint32_t last_touch_time = 0;
 
     // 主循环
     while (1) {
-        // 获取触摸数据
-        // CST816_Get_Touch(&x, &y, &gesture, &points);
-        // if (points > 1) {
-        //     printf("X:%d Y:%d\n", x, y);
-        // }
+        // 每 5ms 调用 lv_timer_handler
+        if (sys_time - last_task_time >= 5) {
+            lv_timer_handler(); // 处理 LVGL 任务
+            last_task_time = sys_time;
+        }
 
-        // 在主循环中处理LVGL任务并提供时间戳（非中断方式）
-        // lv_tick_inc(5);    // 每5ms增加LVGL时间戳
-        // lv_task_handler(); // 处理LVGL任务
-        lv_timer_handler(); // 不再使用中断处理任务
-        Delay_ms(5);        // 延时5ms，控制循环周期
+        // // 每 10ms 采样触摸数据
+        // if (sys_time - last_touch_time >= 10) {
+        //     CST816_Get_Touch(&x, &y, &gesture, &points);
+        //     if (points > 1) {
+        //         printf("X:%d Y:%d\n", x, y);
+        //     }
+        //     last_touch_time = sys_time;
+        // }
     }
 }
 
+/**
+ * @brief TIM3 中断服务函数，每 1ms 调用
+ */
 void TIM3_IRQHandler(void)
 {
     if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET) {
         TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
-        lv_tick_inc(1); // 每1ms增加LVGL时间戳
-        // 注意：通常不建议在中断中直接调用lv_timer_handler()
-        // 可以只更新时间戳，在主循环中处理任务
-        // lv_timer_handler();
+        sys_time++;     // 递增系统时间
+        lv_tick_inc(1); // 每 1ms 增加 LVGL 时间戳
     }
 }

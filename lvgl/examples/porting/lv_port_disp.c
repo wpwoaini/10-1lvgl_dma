@@ -1,178 +1,105 @@
 /**
- * @file lv_port_disp_templ.c
- *
+ * @file lv_port_disp.c
+ * @brief LVGL 显示驱动移植文件
  */
 
-/*Copy this file as "lv_port_disp.c" and set this value to "1" to enable content*/
 #if 1
 
-/*********************
- *      INCLUDES
- *********************/
 #include "lv_port_disp.h"
 #include <stdbool.h>
 #include "st7789.h"
-#include "soft_spi.h"
 #include "lv_port_indev.h"
-/*********************
- *      DEFINES
- *********************/
+
+// 定义屏幕分辨率
 #ifndef MY_DISP_HOR_RES
-// #warning Please define or replace the macro MY_DISP_HOR_RES with the actual screen width, default value 320 is used for now.
-#define MY_DISP_HOR_RES 240
+#define MY_DISP_HOR_RES 240 // 水平分辨率
 #endif
 
 #ifndef MY_DISP_VER_RES
-// #warning Please define or replace the macro MY_DISP_VER_RES with the actual screen height, default value 240 is used for now.
-#define MY_DISP_VER_RES 284
+#define MY_DISP_VER_RES 284 // 垂直分辨率
 #endif
 
-#define BYTE_PER_PIXEL (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_RGB565)) /*will be 2 for RGB565 */
+#define BYTE_PER_PIXEL (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_RGB565)) // RGB565 每像素 2 字节
+#define BUFFER_LINES   40                                                 // 缓冲区行数，优化内存与刷新频率平衡
 
-/**********************
- *      TYPEDEFS
- **********************/
+// 函数原型
+static void disp_init(void);                                                        // 初始化显示设备
+static void disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map); // 刷新显示区域
 
-/**********************
- *  STATIC PROTOTYPES
- **********************/
-static void disp_init(void);
-
-static void disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map);
-
-/**********************
- *  STATIC VARIABLES
- **********************/
-
-/**********************
- *      MACROS
- **********************/
-
-/**********************
- *   GLOBAL FUNCTIONS
- **********************/
-
+/**
+ * @brief 初始化 LVGL 显示驱动
+ */
 void lv_port_disp_init(void)
 {
-    /*-------------------------
-     * Initialize your display
-     * -----------------------*/
-    disp_init();
+    disp_init(); // 初始化显示设备
 
-    /*------------------------------------
-     * Create a display and set a flush_cb
-     * -----------------------------------*/
+    // 创建显示对象并设置刷新回调
     lv_display_t *disp = lv_display_create(MY_DISP_HOR_RES, MY_DISP_VER_RES);
     lv_display_set_flush_cb(disp, disp_flush);
 
-    /* Example 1
-     * One buffer for partial rendering*/
-    // LV_ATTRIBUTE_MEM_ALIGN
-    // static uint8_t buf_1_1[MY_DISP_HOR_RES * 10 * BYTE_PER_PIXEL]; /*A buffer for 10 rows*/
-    // lv_display_set_buffers(disp, buf_1_1, NULL, sizeof(buf_1_1), LV_DISPLAY_RENDER_MODE_PARTIAL);
-
-    // /* Example 2
-    //  * Two buffers for partial rendering
-    //  * In flush_cb DMA or similar hardware should be used to update the display in the background.*/
+    // 定义两个缓冲区，用于部分渲染（双缓冲）
     LV_ATTRIBUTE_MEM_ALIGN
-    static uint8_t buf_2_1[MY_DISP_HOR_RES * 10 * BYTE_PER_PIXEL];
+    static uint8_t buf_2_1[MY_DISP_HOR_RES * BUFFER_LINES * BYTE_PER_PIXEL];
 
     LV_ATTRIBUTE_MEM_ALIGN
-    static uint8_t buf_2_2[MY_DISP_HOR_RES * 10 * BYTE_PER_PIXEL];
+    static uint8_t buf_2_2[MY_DISP_HOR_RES * BUFFER_LINES * BYTE_PER_PIXEL];
     lv_display_set_buffers(disp, buf_2_1, buf_2_2, sizeof(buf_2_1), LV_DISPLAY_RENDER_MODE_PARTIAL);
-
-    // /* Example 3
-    //  * Two buffers screen sized buffer for double buffering.
-    //  * Both LV_DISPLAY_RENDER_MODE_DIRECT and LV_DISPLAY_RENDER_MODE_FULL works, see their comments*/
-    // LV_ATTRIBUTE_MEM_ALIGN
-    // static uint8_t buf_3_1[MY_DISP_HOR_RES * MY_DISP_VER_RES * BYTE_PER_PIXEL];
-
-    // LV_ATTRIBUTE_MEM_ALIGN
-    // static uint8_t buf_3_2[MY_DISP_HOR_RES * MY_DISP_VER_RES * BYTE_PER_PIXEL];
-    // lv_display_set_buffers(disp, buf_3_1, buf_3_2, sizeof(buf_3_1), LV_DISPLAY_RENDER_MODE_DIRECT);
 }
 
-/**********************
- *   STATIC FUNCTIONS
- **********************/
-
-/*Initialize your display and the required peripherals.*/
+/**
+ * @brief 初始化显示硬件
+ */
 static void disp_init(void)
 {
-    /*You code here*/
-    // Soft_SPI_Init();
-    ST7789_Init();
+    ST7789_Init(); // 初始化 ST7789 显示屏
 }
 
-volatile bool disp_flush_enabled = true;
+volatile bool disp_flush_enabled = true; // 控制刷新使能标志
 
-/* Enable updating the screen (the flushing process) when disp_flush() is called by LVGL
+/**
+ * @brief 使能屏幕刷新
  */
 void disp_enable_update(void)
 {
     disp_flush_enabled = true;
 }
 
-/* Disable updating the screen (the flushing process) when disp_flush() is called by LVGL
+/**
+ * @brief 禁用屏幕刷新
  */
 void disp_disable_update(void)
 {
     disp_flush_enabled = false;
 }
 
-/*Flush the content of the internal buffer the specific area on the display.
- *`px_map` contains the rendered image as raw pixel map and it should be copied to `area` on the display.
- *You can use DMA or any hardware acceleration to do this operation in the background but
- *'lv_display_flush_ready()' has to be called when it's finished.*/
-static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *px_map)
+/**
+ * @brief LVGL 刷新回调，将缓冲区内容传输到显示屏
+ * @param disp 显示对象
+ * @param area 待刷新区域
+ * @param px_map 像素数据（RGB565 格式）
+ */
+static void disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
 {
-    uint32_t width    = area->x2 - area->x1 + 1;
-    uint32_t height   = area->y2 - area->y1 + 1;
-    uint32_t px_count = width * height;
     if (disp_flush_enabled) {
-        /*The most simple case (but also the slowest) to put all pixels to the screen one-by-one*/
-
-        // int32_t x;
-        // int32_t y;
-        // for (y = area->y1; y <= area->y2; y++) {
-        //     for (x = area->x1; x <= area->x2; x++) {
-        //         /*Put a pixel to the display. For example:*/
-        //         /*put_px(x, y, *px_map)*/
-        //         px_map++;
-        //     }
-        // }
-        lv_draw_sw_rgb565_swap(px_map, px_count);
+        // 交换 RGB565 字节序（适配 ST7789）
+        lv_draw_sw_rgb565_swap(px_map, (area->x2 - area->x1 + 1) * (area->y2 - area->y1 + 1));
+        // 使用 DMA 传输像素数据到显示屏
         ST7789_Fill_Rect(area->x1, area->y1, area->x2, area->y2, px_map);
     }
-
-    /*IMPORTANT!!!
-     *Inform the graphics library that you are ready with the flushing*/
-    lv_display_flush_ready(disp_drv);
+    // 注意：lv_display_flush_ready 在 DMA 中断中调用
 }
 
-void mylvgl_init()
+/**
+ * @brief 初始化 LVGL 及相关驱动
+ */
+void mylvgl_init(void)
 {
-    /* 初始化LVGL库 */
-    lv_init();
-
-    /*lcd接口初始化*/
-    // lcd_init();
-
-    /* 注册显示驱动 */
-    lv_port_disp_init();
-
-    // /*触摸芯片初始化*/
-    // tp_init();
-
-    // /* 注册输入驱动*/
-    lv_port_indev_init();
-
-    /* 初始化LVGL定时器 */
-    // lv_port_tick_init();
+    lv_init();            // 初始化 LVGL 库
+    lv_port_disp_init();  // 初始化显示驱动
+    lv_port_indev_init(); // 初始化输入设备
+    // 在主程序中初始化 LVGL 定时器（如 10ms 调用 lv_timer_handler）
 }
 
-#else /*Enable this file at the top*/
-
-/*This dummy typedef exists purely to silence -Wpedantic.*/
+#else
 typedef int keep_pedantic_happy;
 #endif
