@@ -1,3 +1,3 @@
-##STM32F4标准库移植LVGL
+## STM32F4标准库移植LVGL
 
 屏幕ST7799 CST816
