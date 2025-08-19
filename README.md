@@ -37,9 +37,11 @@
 ![EIDE.png](https://imgg.we20040120.dpdns.org/file/1755612094470_image.png)
 
  2.打开项目：
+ 
  ![open.png](https://imgg.we20040120.dpdns.org/file/1755612337378_image.png)
 
  3.选择 project.code-workspace 文件，导入项目。
+ 
  ![work.png](https://imgg.we20040120.dpdns.org/file/1755612401914_image.png)
 
 
