@@ -199,7 +199,7 @@ static void touchpad_read(lv_indev_t *indev_drv, lv_indev_data_t *data)
 
     /*Set the last pressed coordinates*/
     data->point.x = last_x;
-    data->point.y = last_y;
+    data->point.y = MY_DISP_VER_RES - last_y;
 }
 
 // /*Return true is the touchpad is pressed*/

@@ -8,7 +8,6 @@
 #include "Delay.h"
 #include "stdio.h"
 #include "CST816.h"
-#include "lv_conf.h"
 
 // 全局系统时间计数器（由 TIM3 中断递增）
 static volatile uint32_t sys_time = 0;

@@ -22,7 +22,7 @@ extern "C" {
 #else
 #include "lvgl/lvgl.h"
 #endif
-
+#include "lv_port_disp.h"
 /*********************
  *      DEFINES
  *********************/
