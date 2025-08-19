@@ -33,6 +33,7 @@
 - 启动 [EIDE](https://marketplace.visualstudio.com/items?itemName=CL.eide)，点击“File” > “Open Workspace”。
 
  1.在vscode下载并且安装[EIDE](https://marketplace.visualstudio.com/items?itemName=CL.eide)：
+ 
 ![EIDE.png](https://imgg.we20040120.dpdns.org/file/1755612094470_image.png)
 
  2.打开项目：
