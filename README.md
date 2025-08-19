@@ -1,5 +1,5 @@
-STM32F4 LVGL 项目 - README
-项目概述
+# STM32F4 LVGL 项目 - README
+## 项目概述
 这是一个基于 STM32F4 微控制器的 LVGL 图形库项目，集成 ST7789 显示屏，使用 SPI DMA 优化显示刷新。项目目标是实现一个高效的图形界面，适用于嵌入式设备开发。当前版本在 EIDE 环境中通过 project.code-workspace 导入后构建，但运行调试时遇到了栈溢出问题。
 
 创建日期: 2025年8月19日
@@ -8,7 +8,7 @@ STM32F4 LVGL 项目 - README
 软件: LVGL 图形库，EIDE 开发环境
 显示: ST7789，240x284 分辨率，双缓冲区 (BUFFER_LINES = 40)
 
-安装与配置
+##安装与配置
 前提条件
 
 硬件: STM32F4 开发板，ST7789 显示模块，SPI 和 I2C 接口连接。
@@ -20,7 +20,7 @@ STM32CubeMX (可选，用于初始化配置)
 
 工具链: GCC ARM Embedded 编译器
 
-安装步骤
+##安装步骤
 
 下载项目:
 克隆或下载本仓库到本地。
