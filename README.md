@@ -69,7 +69,8 @@
 
 - 确保硬件连接与上述引脚定义一致。
 
-## 已知问题 - 栈溢出 - [x]解决
+## 已知问题 - 栈溢出 
+- [x] 解决
 ### 问题描述
 在 EIDE 导入`project.code-workspace`后构建并运行调试时，程序出现栈溢出 (Stack Overflow) 错误，导致调试中断或设备重启。问题可能发生在 mylvgl_init() 初始化期间。
 ### 可能原因
@@ -187,8 +188,11 @@ SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_4;
 欢迎贡献代码或修复问题：
 
 1.Fork 本仓库。
+
 2.创建新分支 (git checkout -b feature-branch)。
+
 3.提交更改 (git commit -m "描述")。
+
 4.推送并提交 Pull Request。
 
 ## 许可证
