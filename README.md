@@ -2,53 +2,53 @@
 ## 项目概述
 这是一个基于 STM32F4 微控制器的 LVGL 图形库项目，集成 ST7789 显示屏，使用 SPI DMA 优化显示刷新。项目目标是实现一个高效的图形界面，适用于嵌入式设备开发。当前版本在 EIDE 环境中通过 project.code-workspace 导入后构建，但运行调试时遇到了栈溢出问题。
 
-创建日期: 2025年8月19日
-更新时间: 2025年8月19日 下午2:59 (+04 时区)
-硬件: STM32F4 系列（可能为 STM32F407 或 STM32F429）
-软件: LVGL 图形库，EIDE 开发环境
-显示: ST7789，240x284 分辨率，双缓冲区 (BUFFER_LINES = 40)
+- 创建日期: 2025年8月19日
+- 更新时间: 2025年8月19日 下午2:59 (+04 时区)
+- 硬件: STM32F4 系列（可能为 STM32F407 或 STM32F429）
+- 软件: LVGL 图形库，EIDE 开发环境
+- 显示: ST7789，240x284 分辨率，双缓冲区 (BUFFER_LINES = 40)
 
-##安装与配置
-前提条件
+## 安装与配置
+### 前提条件
 
-硬件: STM32F4 开发板，ST7789 显示模块，SPI 和 I2C 接口连接。
-软件: 
-EIDE 环境 (Embedded Integrated Development Environment)
-STM32CubeMX (可选，用于初始化配置)
-串口工具 (如 PuTTY 或 Tera Term) 用于调试输出
-
-
-工具链: GCC ARM Embedded 编译器
-
-##安装步骤
-
-下载项目:
-克隆或下载本仓库到本地。
-
-git clone https://github.com/yourusername/stm32f4-lvgl-project.git
+- 硬件: STM32F4 开发板，ST7789 显示模块，SPI 和 I2C 接口连接。
+- 软件: 
+ - EIDE 环境 (Embedded Integrated Development Environment)
+ - STM32CubeMX (可选，用于初始化配置)
+ - 串口工具 (如 PuTTY 或 Tera Term) 用于调试输出
 
 
-打开 EIDE:
-启动 EIDE，点击“File” > “Open Workspace”。
-选择 project.code-workspace 文件，导入项目。
+- 工具链: GCC ARM Embedded 编译器
+
+## 安装步骤
+
+1.下载项目:
+ - 克隆或下载本仓库到本地。
+
+ git clone https://github.com/wpwoaini/10-1lvgl_dma.git
 
 
-配置环境:
-确保 STM32F4 固件库 (STM32F4xx HAL) 已正确链接。
-检查链接脚本 (.ld 文件)，确认 RAM 和 Heap/Stack 分配。
+2.打开 EIDE:
+- 启动 EIDE，点击“File” > “Open Workspace”。
+- 选择 project.code-workspace 文件，导入项目。
 
 
-构建项目:
-点击“Build”按钮，编译项目。
+3.配置环境:
+- 确保 STM32F4 固件库 (STM32F4xx.h) 已正确链接。
+- 检查链接脚本 (.ld 文件)，确认 RAM 和 Heap/Stack 分配。
 
 
-运行调试:
-连接调试器 (如 ST-Link)，点击“Debug”运行。
+4.构建项目:
+- 点击“Build”按钮，编译项目。
+
+
+5.运行调试:
+- 连接调试器 (如 ST-Link)，点击“Debug”运行。
 
 
 
-硬件引脚配置
-以下是项目使用的引脚定义，基于 GPIOB 端口：
+6.硬件引脚配置
+- 以下是项目使用的引脚定义，基于 GPIOB 端口：
 
 
 
