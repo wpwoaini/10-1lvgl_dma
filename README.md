@@ -30,8 +30,17 @@
 
 
 2.打开 EIDE:
-- 启动 EIDE，点击“File” > “Open Workspace”。
-- 选择 project.code-workspace 文件，导入项目。
+- 启动 [EIDE](https://marketplace.visualstudio.com/items?itemName=CL.eide)，点击“File” > “Open Workspace”。
+
+ 1.在vscode下载并且安装[EIDE](https://marketplace.visualstudio.com/items?itemName=CL.eide)：
+![EIDE.png](https://imgg.we20040120.dpdns.org/file/1755612094470_image.png)
+
+ 2.打开项目：
+ ![open.png](https://imgg.we20040120.dpdns.org/file/1755612337378_image.png)
+
+ 3.选择 project.code-workspace 文件，导入项目。
+ ![work.png](https://imgg.we20040120.dpdns.org/file/1755612401914_image.png)
+
 
 
 3.配置环境:
@@ -44,8 +53,10 @@
 
 
 5.运行调试:
-- 连接调试器 (如 ST-Link)，点击“Debug”运行。
+>**注意**：如果可以直接flash则不用此项，因为栈的问题，无法`启动`(HAL库没这个问题)
 
+- 连接调试器 (如 ST-Link)，点击“Debug”运行。
+ ![image.png](https://imgg.we20040120.dpdns.org/file/1755612475627_image.png)
 
 
 ## 硬件引脚配置
@@ -200,4 +211,5 @@ SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_4;
 联系方式
 
 日期: 2025年8月19日 下午2:59 (+04)
+
 支持: 通过 GitHub Issues 联系。
