@@ -23,7 +23,8 @@ int main(void)
     Timer_Init();      // 初始化 TIM3，提供 1ms 时间戳
     mylvgl_init();     // 初始化 LVGL
     lv_demo_widgets(); // 运行 LVGL 示例
-
+    // Soft_I2C_Init(); // 初始化 I2C
+    // CST816_Init(); // 初始化触摸屏
     uint16_t x, y;
     uint8_t gesture, points;
     uint32_t last_task_time  = 0;
@@ -32,19 +33,20 @@ int main(void)
     // 主循环
     while (1) {
         // 每 5ms 调用 lv_timer_handler
-        if (sys_time - last_task_time >= 5) {
-            lv_timer_handler(); // 处理 LVGL 任务
-            last_task_time = sys_time;
-        }
+        // if (sys_time - last_task_time >= 5) {
+        //     lv_timer_handler(); // 处理 LVGL 任务
+        //     last_task_time = sys_time;
+        // }
+
+        // CST816_Get_Touch(&x, &y, &gesture, &points);
+        // if (points > 0) {
+        //     printf("X:%d Y:%d\n", x, y);
+        // }
+
+        lv_task_handler();
+        Delay_ms(5);
 
         // // 每 10ms 采样触摸数据
-        // if (sys_time - last_touch_time >= 10) {
-        //     CST816_Get_Touch(&x, &y, &gesture, &points);
-        //     if (points > 1) {
-        //         printf("X:%d Y:%d\n", x, y);
-        //     }
-        //     last_touch_time = sys_time;
-        // }
     }
 }
 
@@ -55,7 +57,7 @@ void TIM3_IRQHandler(void)
 {
     if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET) {
         TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
-        sys_time++;     // 递增系统时间
-        lv_tick_inc(1); // 每 1ms 增加 LVGL 时间戳
+        // sys_time++;     // 递增系统时间
+        lv_tick_inc(5); // 每 1ms 增加 LVGL 时间戳
     }
 }

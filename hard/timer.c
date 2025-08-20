@@ -10,7 +10,7 @@ void Timer_Init(void)
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
     // 配置 TIM3：1ms 中断
-    TIM_TimeBaseStructure.TIM_Period        = 1000 - 1;                        // 1ms中断间隔
+    TIM_TimeBaseStructure.TIM_Period        = 5000 - 1;                        // 5ms中断间隔
     TIM_TimeBaseStructure.TIM_Prescaler     = (SystemCoreClock / 1000000) - 1; // 1us计数精度
     TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
     TIM_TimeBaseStructure.TIM_CounterMode   = TIM_CounterMode_Up;

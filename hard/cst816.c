@@ -72,7 +72,7 @@ void CST816_Get_Touch(uint16_t *x, uint16_t *y, uint8_t *gesture, uint8_t *point
     *y       = ((buf[4] & 0x0F) << 8) | buf[5]; // Y 坐标（12 位）
 
     // 调试输出
-    if (*points > 0) {
-        printf("Touch: x=%d, y=%d, points=%d, gesture=%d\n", *x, *y, *points, *gesture);
-    }
+    // if (*points > 0) {
+    //     printf("Touch: x=%d, y=%d, points=%d, gesture=%d\n", *x, *y, *points, *gesture);
+    // }
 }
