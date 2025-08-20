@@ -84,7 +84,74 @@
 - 确保硬件连接与上述引脚定义一致。
 
 ## 已知问题 - 栈溢出 
-- [x] 解决
+- [√] 解决
+
+## 解决方案
+
+![image.png](https://imgg.we20040120.dpdns.org/file/1755695717859_image.png)
+
+问题是`printf("Touch: x=%d, y=%d, points=%d, gesture=%d\n", *x, *y, *points, *gesture);`代码栈溢出问题，虽然进行了串口初始化但是，进行`printf`会瞬间加大栈的消耗，导致启动失败。
+
+1. 嵌入式系统的栈空间限制
+在 STM32 等嵌入式系统中，栈（Stack）的大小是固定且有限的（通常在链接脚本.ld中配置，例如_Min_Stack_Size = 0x400;即 1KB）。栈用于存储：
+
+- 函数调用的返回地址
+- 局部变量
+- 函数参数
+- 函数执行过程中的临时数据（如寄存器压栈）
+
+如果程序中某个操作消耗的栈空间超过配置的栈大小，就会发生栈溢出（Stack Overflow），导致程序崩溃、运行异常等问题。
+
+2. printf 函数的栈消耗特性
+printf（尤其是带格式化字符串的调用）在嵌入式系统中是高栈消耗操作，原因如下：
+
+- 格式化字符串处理：printf("Touch: x=%d, y=%d, points=%d, gesture=%d\n", ...)需要将整数（x、y等）转换为字符串，这个过程会在栈上临时分配缓冲区（用于存储转换后的字符串）。
+- 参数压栈：多个参数（4 个整数 + 字符串指针）需要依次压入栈中，增加栈的瞬时占用。
+- 库函数内部调用：printf会调用底层的fputc、字符串处理函数等，这些函数也会消耗额外的栈空间。
+3. 代码中的触发条件
+从代码逻辑看，被注释的printf位于触摸采样逻辑中：
+
+- 触摸芯片CST816会周期性（原代码计划每 10ms）采样数据，若检测到触摸（*points > 0），则触发printf。
+- 当触摸事件频繁发生（例如手指滑动时），printf会被高频调用（每 10ms 内多次执行），导致栈空间被反复、快速占用。
+
+此时，若 LVGL 库（lv_task_handler）本身也在消耗栈空间（例如 UI 绘制时的临时变量），两者叠加可能超过系统配置的栈大小，引发栈溢出。
+4. 注释后问题消失的原因
+注释printf后，消除了高栈消耗的操作：
+
+- 不再有格式化字符串的临时缓冲区分配。
+- 不再有频繁的参数压栈和库函数调用。
+- 栈空间仅需满足lv_task_handler、触摸采样等基础操作，未超过配置上限，因此栈溢出问题消失。
+
+```
+void CST816_Get_Touch(uint16_t *x, uint16_t *y, uint8_t *gesture, uint8_t *points)
+{
+    uint8_t buf[6];
+
+    Soft_I2C_Start();
+    Soft_I2C_Write_Byte((CST816_ADDR << 1) | 0); // 写地址
+    Soft_I2C_Write_Byte(0x01);                   // 从寄存器 0x01 开始
+    Soft_I2C_Start();
+    Soft_I2C_Write_Byte((CST816_ADDR << 1) | 1); // 读地址
+    buf[0] = Soft_I2C_Read_Byte(1);              // GestureID
+    buf[1] = Soft_I2C_Read_Byte(1);              // FingerNum
+    buf[2] = Soft_I2C_Read_Byte(1);              // XposH
+    buf[3] = Soft_I2C_Read_Byte(1);              // XposL
+    buf[4] = Soft_I2C_Read_Byte(1);              // YposH
+    buf[5] = Soft_I2C_Read_Byte(0);              // YposL
+    Soft_I2C_Stop();
+
+    *gesture = buf[0];
+    *points  = buf[1] & 0x0F;                   // 触摸点数（低 4 位）
+    *x       = ((buf[2] & 0x0F) << 8) | buf[3]; // X 坐标（12 位）
+    *y       = ((buf[4] & 0x0F) << 8) | buf[5]; // Y 坐标（12 位）
+
+    // 调试输出
+    // if (*points > 0) {
+    //     printf("Touch: x=%d, y=%d, points=%d, gesture=%d\n", *x, *y, *points, *gesture);
+    // }
+}
+```
+
 ### 问题描述
 在 EIDE 导入`project.code-workspace`后构建并运行调试时，程序出现栈溢出 (Stack Overflow) 错误，导致调试中断或设备重启。问题可能发生在 mylvgl_init() 初始化期间。
 ### 可能原因
@@ -104,97 +171,6 @@ TIM3 中断或 DMA 中断中调用 lv_timer_handler() 导致栈溢出。
 
 - 代码优化问题:
 EIDE 优化级别过高，可能导致栈使用异常。
-
-
-
-### 排查步骤
-
-1.检查 SRAM 使用:
-- 打开 .ld 文件，确认 RAM 区域大小。
-- 示例配置:
-```
-MEMORY
-{
-    RAM (xrw) : ORIGIN = 0x20000000, LENGTH = 128K
-}
-_estack = ORIGIN(RAM) + LENGTH(RAM); /* 栈顶 */
-_Min_Stack_Size = 0x800; /* 2KB 栈 */
-_Min_Heap_Size = 0x400; /* 1KB 堆 */
-```
-
-- 确保 `BUFFER_LINES * MY_DISP_HOR_RES * BYTE_PER_PIXEL * 2 `加上栈和堆不超过 SRAM。
-
-
-2.添加调试信息:
-在 `lv_port_disp_init() `中添加串口输出:
-```
-void lv_port_disp_init(void)
-{
-    printf("Starting lv_port_disp_init...\n");
-    disp_init();
-    printf("disp_init completed.\n");
-    // 其他初始化代码
-}
-```
-
-- 运行后检查串口输出，定位崩溃点。
-
-
-3.调整缓冲区大小:
-- 减小 BUFFER_LINES (如从 40 减到 20)，缓冲区降至 19.2KB:
-```
-#define BUFFER_LINES 20
-```
-
-
-
-
-4.修改栈大小:
-- 在 .ld 文件中增加 _Min_Stack_Size (如 4KB):
-```
-_Min_Stack_Size = 0x1000; /* 4KB 栈 */
-```
-
-
-
-5.检查中断配置:
-- 确保 TIM3 中断优先级低于 DMA (如 TIM3 设为 1，DMA 设为 0):
-```
-NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1; // TIM3
-```
-
-
-
-6.验证硬件:
-- 检查 SPI 引脚 (PB5, PB6, PB7, PB4) 和 ST7789 连接。
-- 降低 SPI 频率 (如从 42MHz 降至 21MHz):
-```
-SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_4;
-```
-
-
-
-
-## 解决方案
-
-- 临时解决:
- - 减小 BUFFER_LINES 到 20，增加栈大小到 4KB，重新构建并调试。
-
-
-- 长期优化:
- - 使用调试器 (如 Keil 或 STM32CubeIDE) 监控栈使用。
- - 移除中断中的 lv_timer_handler()，在主循环中调用:
- ```
- while (1) {
-    if (sys_time - last_task_time >= 5) {
-        lv_timer_handler();
-        last_task_time = sys_time;
-    }
-    Delay_ms(5);
-}
-```
-
-- 确认 STM32F4 型号 (如 F407 或 F429)，调整内存分配。
 
 
 
